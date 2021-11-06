@@ -15,9 +15,30 @@ app.use(express.json());
 async function run(){
  try{
     await client.connect();
-    console.log('connected successfully');
+    const database = client.db("Doctor-portal");
+    const appointmentCollection = database.collection("appointments");
+
+    //post 
+
+    app.post('/appointments',async(req,res)=>{
+      const appointment=req.body;
+      const result = await appointmentCollection.insertOne(appointment);
+      res.json(result);
+    })
+
+
+    //Get
+    app.get('/appointments',async(req,res)=>{
+      const email=req.query.email;
+      const date=new Date(req.query.date).toLocaleDateString();
+      const query={email:email, date:date}
+      const cursor=appointmentCollection.find(query);
+      const appointments= await cursor.toArray();
+      res.json(appointments);
+    })
 
  }
+
 finally{
     // await client.close();
 }
