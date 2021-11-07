@@ -17,6 +17,7 @@ async function run(){
     await client.connect();
     const database = client.db("Doctor-portal");
     const appointmentCollection = database.collection("appointments");
+    const usersCollection = database.collection("users");
 
     //post 
 
@@ -24,6 +25,35 @@ async function run(){
       const appointment=req.body;
       const result = await appointmentCollection.insertOne(appointment);
       res.json(result);
+    })
+
+    //Register user set in database
+
+    app.post('/users',async(req,res)=>{
+      const user=req.body;
+      const result=await usersCollection.insertOne(user);
+      res.json(result);
+    })
+
+    //GoogleSignin user save in database in upsert
+
+    //Put use to update 
+    app.put('/users',async(req,res)=>{
+      const user=req.body;
+      const filter = {email:user.email };
+      const options = { upsert: true };
+      const updateDoc={$set:user};
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.json(result);
+    })
+
+    app.put('/users/admin',async(req,res)=>{
+      const user= req.body;
+      const filter={email:user.email}
+      const updateDoc={$set:{role:'admin'}};
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.json(result);
+      
     })
 
 
