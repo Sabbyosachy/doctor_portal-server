@@ -3,17 +3,18 @@ const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const admin = require("firebase-admin");
 require('dotenv').config();
+const ObjectId=require('mongodb').ObjectId;
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.edakp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
+console.log(uri);
 const app = express()
 const port = process.env.PORT || 5000;
 
 
-
-
-const serviceAccount = require('./doctorsportal-adminsdk.json');
+const serviceAccount = require ('./doctorsportal-adminsdk.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -62,6 +63,45 @@ async function run(){
       res.json(result);
     })
     
+    app.get('/appointments/:id',async(req,res)=>{
+      const id=req.params.id;
+      const query={_id:ObjectId(id)};
+      const result=await appointmentCollection.findOne(query);
+      res.json(result);
+
+    })
+
+    //Put appointmnet
+    app.put('/appointments/:id',async(req,res)=>{
+      const id=req.params.id;
+      const payment=req.body;
+      const filter={_id:ObjectId(id)};
+      const updateDoc = {
+        $set: {
+          payment:payment
+        },
+      };
+       
+      const result=await appointmentCollection.updateOne(filter,updateDoc);
+      res.json(result);
+    })
+
+   
+    //Payment post
+    app.post('/create-payment-intent',async(req,res)=>{
+    const paymentinfo=req.body;
+    const amount=paymentinfo.price*100;
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount:amount,
+      currency: "usd",
+      payment_method_types:['card']
+     
+    });
+    res.json({clientSecret: paymentIntent.client_secret})
+
+    })
+   
+
     //admin 
 
     app.get('/users/:email',async(req,res)=>{
